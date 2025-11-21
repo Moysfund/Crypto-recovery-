@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crypto Recovery</title>
+
+  <!-- Inline CSS: dark, technical theme -->
+  <style>
+    :root {
+      --bg1: #0f172a;
+      --bg2: #1e3a8a;
+      --accent1: #3b82f6;
+      --accent2: #06b6d4;
+      --text: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Inter, system-ui, sans-serif;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* Intro screen + loader */
+    #intro {
+      position: fixed; inset: 0; z-index: 999;
+      background: linear-gradient(135deg, var(--bg1), var(--bg2));
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; transition: opacity 0.8s ease;
+    }
+    #intro h1 { font-size: 2rem; margin: 0 0 10px; color: #f0f9ff; }
+    #intro p { color: #93c5fd; }
+    #loader {
+      position: fixed; z-index: 998; top: 50%; left: 50%;
+      width: 44px; height: 44px; margin: -22px;
+      border: 4px solid var(--accent1); border-top-color: transparent; border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Particles canvas */
+    #particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    /* Ticker */
+    #ticker {
+      position: sticky; top: 0; z-index: 2;
+      background: rgba(59,130,246,0.18);
+      backdrop-filter: blur(8px);
+      padding: 10px 12px; display: flex; gap: 16px; justify-content: center; font-weight: 600;
+      animation: glow 2s infinite alternate;
+    }
+    #ticker span { color: #f0f9ff; }
+    @keyframes glow {
+      from { text-shadow: 0 0 6px var(--accent1); }
+      to   { text-shadow: 0 0 16px var(--accent2); }
+    }
+
+    /* Container + hero */
+    .container { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 28px 18px 60px; }
+    header { text-align: center; margin: 20px 0 34px; }
+    h1 { font-size: 2.2rem; margin: 0 0 8px; color: #f0f9ff; text-shadow: 0 0 12px rgba(59,130,246,0.6); }
+    .subtitle { font-size: 1.05rem; color: #93c5fd; }
+    .badges span {
+      display: inline-block; background: linear-gradient(90deg,var(--accent1),var(--accent2)); color: #fff;
+      padding: 8px 14px; margin: 14px 6px; border-radius: 12px; font-weight: 700;
+      box-shadow: 0 0 12px rgba(59,130,246,0.6);
+    }
+    .btn {
+      display: inline-block; margin-top: 16px; padding: 12px 20px;
+      background: linear-gradient(90deg,var(--accent1),var(--accent2)); color: #fff; text-decoration: none;
+      border-radius: 12px; font-weight: 700; box-shadow: 0 0 16px rgba(59,130,246,0.7);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 0 22px rgba(59,130,246,0.9); }
+
+    /* Glass panels */
+    section {
+      margin-top: 34px; text-align: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px; padding: 26px;
+      backdrop-filter: blur(12px); box-shadow: 0 8px 30px rgba(0,0,0,0.38);
+    }
+    section h2 { font-size: 1.6rem; margin: 0 0 16px; color: #f0f9ff; text-shadow: 0 0 10px rgba(6,182,212,0.6); }
+    section p { color: #cbd5e1; }
+
+    /* Contact links */
+    section a { color: #38bdf8; text-decoration: none; }
+    section a:hover { text-decoration: underline; }
+
+    /* Form */
+    form { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+    input, textarea {
+      padding: 12px; border-radius: 10px; border: none;
+      background: rgba(255,255,255,0.08); color: var(--text);
+    }
+    input::placeholder, textarea::placeholder { color: #94a3b8; }
+    .note { font-size: 0.9rem; color: #94a3b8; margin-top: 8px; }
+
+    /* Verification badge */
+    .verification {
+      display: inline-block; margin-top: 14px; padding: 8px 14px;
+      background: rgba(59,130,246,0.22); border-radius: 12px; color: var(--accent1); font-weight: 700;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 6px rgba(59,130,246,0.6); }
+      50% { box-shadow: 0 0 18px rgba(59,130,246,0.95); }
+      100% { box-shadow: 0 0 6px rgba(59,130,246,0.6); }
+    }
+
+    /* Testimonials */
+    #testimonials { padding: 34px; }
+    .carousel { position: relative; overflow: hidden; height: 240px; }
+    .slide {
+      opacity: 0; transition: opacity 0.8s ease; position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .slide.active { opacity: 1; }
+    .slide p { font-size: 1.1rem; margin: 12px 0 8px; color: var(--text); max-width: 680px; }
+    .slide span { color: #93c5fd; }
+    .avatar {
+      width: 72px; height: 72px; border-radius: 50%;
+      border: 3px solid var(--accent1); box-shadow: 0 0 12px rgba(59,130,246,0.7); object-fit: cover;
+    }
+    .dots { margin-top: 16px; }
+    .dot {
+      display: inline-block; width: 12px; height: 12px; margin: 0 6px;
+      background: var(--accent1); border-radius: 50%; cursor: pointer; opacity: 0.55;
+    }
+    .dot.active { opacity: 1; box-shadow: 0 0 10px rgba(59,130,246,0.8); }
+
+    /* FAQ */
+    .faq-item { text-align: left; margin: 12px 0; }
+    .faq-question {
+      width: 100%; padding: 12px; background: rgba(255,255,255,0.08);
+      border: none; color: var(--text); text-align: left; cursor: pointer; border-radius: 10px;
+    }
+    .faq-answer { display: none; padding: 10px; color: #93c5fd; }
+
+    /* Main content fade-in */
+    #mainContent { opacity: 0; transition: opacity 0.8s ease; }
+  </style>
+</head>
+<body>
+
+  <!-- Intro + loader -->
+  <div id="intro">
+    <h1>Crypto Recovery</h1>
+    <p>Securing your digital future...</p>
+  </div>
+  <div id="loader"></div>
+
+  <!-- Particles -->
+  <canvas id="particles"></canvas>
+
+  <!-- Live price ticker -->
+  <div id="ticker">
+    <span id="btc">BTC: —</span>
+    <span id="eth">ETH: —</span>
+    <span id="sol">SOL: —</span>
+  </div>
+
+  <!-- Main content -->
+  <div class="container" id="mainContent">
+    <header>
+      <h1>Recover Stolen Cryptocurrency in 24 Hours</h1>
+      <p class="subtitle">We’ve successfully recovered over 1,000 cryptocurrencies for our clients</p>
+      <div class="badges">
+        <span>CERTIFIED</span><span>SECURED</span>
+      </div>
+      <a class="btn" href="#contact">Get Started</a>
+      <div class="verification"><span>🛡️</span> Secured by Crypto Recovery</div>
+    </header>
+
+    <section id="request">
+      <h2>Start a recovery request</h2>
+      <form id="recoveryForm">
+        <input type="text" name="name" placeholder="Full name" required />
+        <input type="email" name="email" placeholder="Email address" required />
+        <input type="text" name="wallet" placeholder="Wallet address (e.g. 0x...)" required />
+        <input type="text" name="platform" placeholder="Platform used (e.g. Binance)" required />
+        <textarea name="description" placeholder="Describe what happened..." rows="5" required></textarea>
+        <button type="submit" class="btn">Submit request</button>
+      </form>
+      <p class="note">We never ask for private keys. Only public info is required.</p>
+    </section>
+
+    <section id="testimonials">
+      <h2>What our clients say</h2>
+      <div class="carousel">
+        <div class="slide active">
+          <img src="avatar1.png" alt="Sarah" class="avatar">
+          <p>"Crypto Recovery helped me recover my stolen Bitcoin within 24 hours. Truly amazing!"</p>
+          <span>- Sarah, UK</span>
+        </div>
+        <div class="slide">
+          <img src="avatar2.png" alt="James" class="avatar">
+          <p>"I thought my Ethereum was gone forever, but they tracked it and got it back."</p>
+          <span>- James, USA</span>
+        </div>
+        <div class="slide">
+          <img src="avatar3.png" alt="Aisha" class="avatar">
+          <p>"Professional, fast, and secure. Highly recommend their recovery services."</p>
+          <span>- Aisha, Nigeria</span>
+        </div>
+      </div>
+      <div class="dots"><span class="dot active"></span><span class="dot"></span><span class="dot"></span></div>
+    </section>
+
+    <section id="faq">
+      <h2>Frequently asked questions</h2>
+      <div class="faq-item">
+        <button class="faq-question">How does recovery work?</button>
+        <div class="faq-answer">We trace stolen funds using blockchain analytics and secure protocols, then coordinate recovery.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">Is my data safe?</button>
+        <div class="faq-answer">Yes. We never ask for private keys. Only public info is required to begin analysis.</div>
+      </div>
+      <div class="faq-item">
+        <button class="faq-question">How long does it take?</button>
+        <div class="faq-answer">Cases vary, but many are triaged within 24 hours. Complex cases may take longer.</div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <h2>Contact us</h2>
+      <p>Email: <a href="mailto:ojod42019@gmail.com">ojod42019@gmail.com</a></p>
+      <p>Telegram: <a href="https://t.me/Yobooo98" target="_blank">@Yobooo98</a></p>
+    </section>
+  </div>
+
+  <!-- Inline JS: particles, ticker, carousel, intro -->
+  <script>
+    // Intro fade
+    window.addEventListener("load", () => {
+      document.getElementById("intro").style.opacity = "0";
+      setTimeout(() => {
+        document.getElementById("intro").style.display = "none";
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("mainContent").style.opacity = "1";
+      }, 800);
+    });
+
+    // FAQ accordion
+    document.addEventListener("click", (e) => {
+      if (e.target.classList.contains("faq-question")) {
+        const ans = e.target.nextElementSibling;
+        ans.style.display = ans.style.display === "block" ? "none" : "block";
+      }
+    });
+
+    // Price ticker (simple fetch; if blocked, it will keep placeholders)
+    async function fetchPrices() {
+      try {
+        const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana&vs_currencies=usd");
+        const data = await res.json();
+        document.getElementById("btc").textContent = `BTC: $${data.bitcoin.usd}`;
+        document.getElementById("eth").textContent = `ETH: $${data.ethereum.usd}`;
+        document.getElementById("sol").textContent = `SOL: $${data.solana.usd}`;
+      } catch {}
+    }
+    fetchPrices();
+    setInterval(fetchPrices, 10000);
+
+    // Particles (crypto icons)
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let w, h, particles = [];
+    function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize); resize();
+
+    const icons = [
+      function drawBTC(x, y, size) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(size / 24, size / 24);
+        ctx.fillStyle = '#f59e0b'; ctx.font = "bold 20px Arial"; ctx.fillText("฿", 0, 20); ctx.restore();
+      },
+      function drawETH(x, y, size) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(size / 24, size / 24);
+        ctx.fillStyle = '#06b6d4'; ctx.beginPath();
+        ctx.moveTo(12,0); ctx.lineTo(24,12); ctx.lineTo(12,18); ctx.lineTo(0,12); ctx.closePath();
+        ctx.moveTo(12,18); ctx.lineTo(24,24); ctx.lineTo(12,36); ctx.lineTo(0,24); ctx.closePath();
+        ctx.fill(); ctx.restore();
+      },
+      function drawShield(x, y, size) {
+        ctx.save(); ctx.translate(x, y); ctx.scale(size / 24, size / 24);
+        ctx.fillStyle = '#3b82f6'; ctx.beginPath();
+        ctx.moveTo(12,0); ctx.lineTo(24,6); ctx.lineTo(20,24); ctx.lineTo(12,30); ctx.lineTo(4,24); ctx.lineTo(0,6); ctx.closePath();
+        ctx.fill(); ctx.restore();
+      }
+    ];
+    class Particle {
+      constructor(){ this.reset(); }
+      reset(){
+        this.x = Math.random()*w; this.y = Math.random()*h;
+        this.size = Math.random()*20 + 12;
+        this.speedX = (Math.random()-0.5)*0.25; this.speedY = (Math.random()-0.5)*0.25;
+        this.alpha = Math.random()*0.8 + 0.2;
+        this.icon = icons[Math.floor(Math.random()*icons.length)];
+      }
+      update(){ this.x += this.speedX; this.y += this.speedY;
+        if(this.x<-50 || this.x>w+50 || this.y<-50 || this.y>h+50) this.reset(); }
+      draw(){ ctx.globalAlpha = this.alpha; this.icon(this.x, this.y, this.size); }
+    }
+    function initParticles(n=60){ particles=[]; for(let i=0;i<n;i++) particles.push(new Particle()); }
+    function animate(){ ctx.clearRect(0,0,w,h); particles.forEach(p=>{p.update(); p.draw();}); requestAnimationFrame(animate); }
+    initParticles(); animate();
+
+    // Testimonials carousel
+    const slides = document.querySelectorAll(".slide");
+    const dots = document.querySelectorAll(".dot");
+    let idx = 0;
+    function showSlide(i){
+      slides.forEach((s,k)=>s.classList.toggle("active", k===i));
+      dots.forEach((d,k)=>d.classList.toggle("active", k===i));
+      idx = i;
+    }
+    function nextSlide(){ showSlide((idx+1)%slides.length); }
+    dots.forEach((d,i)=>d.addEventListener("click", ()=>showSlide(i)));
+    setInterval(nextSlide, 5000);
+
+    // Mock form submit (no backend yet)
+    document.getElementById("recoveryForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      alert("Your request has been received. We’ll contact you shortly.");
+      e.target.reset();
+    });
+  </script>
+</body>
+  </html>
